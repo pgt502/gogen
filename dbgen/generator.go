@@ -32,6 +32,10 @@ func (g *Generator) Table() string {
 	return strings.ToLower(g.Name())
 }
 
+func (g *Generator) Schema() string {
+	return "public"
+}
+
 func (g *Generator) TablePackage() string {
 	return "table"
 }

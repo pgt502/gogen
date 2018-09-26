@@ -57,34 +57,26 @@ func main() {
 		return
 	}
 
-	var tpl, content, fn string
-
 	// generate interface:
-	tpl, err = readTemplate("tableInterface.tpl")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	content = g.Generate(tpl)
-	fmt.Printf("generated file: %s\n", content)
-
-	fn = path.Join(*output, fmt.Sprintf("%sTable.go", strings.ToLower(ifaceName)))
-	fn, err = filepath.Abs(fn)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	writeToFile(fn, content)
-
+	generateFile("tableInterface.tpl", path.Join(*output, fmt.Sprintf("%sTable.go", strings.ToLower(ifaceName))), g)
 	// generate pgTable:
-	tpl, err = readTemplate("pgTableStruct.tpl")
+	generateFile("pgTableStruct.tpl", path.Join(*output, fmt.Sprintf("pg%sTable.go", ifaceName)), g)
+	// generate postgresql script
+	generateFile("tableScript.up.tpl", path.Join(*output, fmt.Sprintf("nn_table_%s.up.sql", strings.ToLower(ifaceName))), g)
+	generateFile("tableScript.down.tpl", path.Join(*output, fmt.Sprintf("nn_table_%s.down.sql", strings.ToLower(ifaceName))), g)
+	// generate repo:
+	generateFile("tableRepo.tpl", path.Join(*output, fmt.Sprintf("%sRepo.go", strings.ToLower(ifaceName))), g)
+}
+
+func generateFile(tplName, fn string, g *dbgen.Generator) {
+	tpl, err := readTemplate(tplName)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	content = g.Generate(tpl)
+	content := g.Generate(tpl)
 	fmt.Printf("generated file: %s\n", content)
-	fn = path.Join(*output, fmt.Sprintf("pg%sTable.go", ifaceName))
+
 	fn, err = filepath.Abs(fn)
 	if err != nil {
 		fmt.Println(err)
