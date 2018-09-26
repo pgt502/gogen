@@ -14,6 +14,14 @@
   revision = "d7d4131e6607813977e78297a6060f360f056a97"
 
 [[projects]]
+  digest = "1:060e2ff7ee3e51b4a0fadf46308033bfe3b8030af6a8078ec26916e2e9b2fdc3"
+  name = "github.com/fatih/structtag"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "76ae1d6d2117609598c7d4e8f3e938145f204e8f"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:4c0989ca0bcd10799064318923b9bc2db6b4d6338dd75f3f2d86c3511aaaf5cf"
   name = "github.com/golang/protobuf"
   packages = [
@@ -123,6 +131,7 @@
   input-imports = [
     "github.com/ernesto-jimenez/gogen/importer",
     "github.com/ernesto-jimenez/gogen/imports",
+    "github.com/fatih/structtag",
     "google.golang.org/grpc",
   ]
   solver-name = "gps-cdcl"

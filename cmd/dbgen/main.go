@@ -57,16 +57,18 @@ func main() {
 		return
 	}
 
+	var tpl, content, fn string
+
 	// generate interface:
-	tpl, err := readTemplate("tableInterface.tpl")
+	tpl, err = readTemplate("tableInterface.tpl")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	content := g.Generate(tpl)
+	content = g.Generate(tpl)
 	fmt.Printf("generated file: %s\n", content)
 
-	fn := path.Join(*output, fmt.Sprintf("%sTable.go", strings.ToLower(ifaceName)))
+	fn = path.Join(*output, fmt.Sprintf("%sTable.go", strings.ToLower(ifaceName)))
 	fn, err = filepath.Abs(fn)
 	if err != nil {
 		fmt.Println(err)

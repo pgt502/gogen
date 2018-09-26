@@ -24,19 +24,6 @@ func NewGenerator(stuctName, pkgName string) (*Generator, error) {
 	g := &Generator{
 		Generator: base,
 	}
-	//fmt.Sscanf
-
-	fields := g.Fields()
-	for i, el := range fields {
-		fmt.Printf("field %d: name: %s, type: %s, tag: %s\n", i, el.Name(), el.Type(), el.Tag())
-	}
-
-	imports := g.Imports()
-	for k, v := range imports {
-		fmt.Printf("key: %s, value: %s\n", k, v)
-	}
-	//content := g.Generate()
-	//fmt.Println(content)
 
 	return g, nil
 }
@@ -54,23 +41,59 @@ func (g *Generator) PGTablePackage() string {
 }
 
 func (g *Generator) Columns() []string {
+
 	fields := g.Fields()
 	ret := make([]string, len(fields))
 	for i, el := range fields {
-		ret[i] = strings.ToLower(el.Name())
+		ret[i] = el.Column()
 	}
 	return ret
 }
 
-/*
-func (g *Generator) Generate() string {
-	var buf bytes.Buffer
-	buf.WriteString(g.generate(tableInterfaceTpl))
-	buf.WriteString("\n\n")
-	buf.WriteString(g.generate(pgtableStructTpl))
-	return buf.String()
+func (g *Generator) Fields() []DbField {
+	if g.IsInterface() {
+		return nil
+	}
+	bfields := g.Generator.Fields()
+
+	dbFields := make([]DbField, len(bfields))
+	for i, el := range bfields {
+		f := NewDbField(el)
+		dbFields[i] = f
+	}
+	return dbFields
 }
-*/
+
+func (g *Generator) PKFields() []DbField {
+	if g.IsInterface() {
+		return nil
+	}
+	all := g.Fields()
+
+	pkFields := make([]DbField, 0)
+	for _, el := range all {
+		if el.IsPK() {
+			pkFields = append(pkFields, el)
+		}
+	}
+	return pkFields
+}
+
+func (g *Generator) NonPKFields() []DbField {
+	if g.IsInterface() {
+		return nil
+	}
+	all := g.Fields()
+
+	nonPkFields := make([]DbField, 0)
+	for _, el := range all {
+		if !el.IsPK() {
+			nonPkFields = append(nonPkFields, el)
+		}
+	}
+	return nonPkFields
+}
+
 func (g *Generator) Generate(tpl string) string {
 	var buf bytes.Buffer
 	buf.WriteString("\n\n")

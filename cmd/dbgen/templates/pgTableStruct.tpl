@@ -43,8 +43,83 @@ func (t *pg{{.Name}}Table) Insert(el {{.Package}}.{{.Name}}) (err error) {
 }
 
 func (t *pg{{.Name}}Table) Update(el {{.Package}}.{{.Name}}) (err error) {
+    primaryKey := "{{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
+    valueSet := "{{range $i, $f := .NonPKFields}}{{if $i}},{{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
+
+    sqlStatement := fmt.Sprintf("UPDATE %s SET %s WHERE %s", t.tableName, valueSet, primaryKey)
+    _, err = t.db.Exec(sqlStatement,
+        {{range $i, $f := .Fields}} el.{{$f.Name}},
+        {{end}}
+    )
+
+    if err != nil {
+        
+    }
+
     return
 }
 
 
-//GetAll() ([]*{{.Package}}.{{.Name}}, error)
+func (t *pg{{.Name}}Table) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
+    sqlStatement := fmt.Sprintf(`SELECT %s
+        FROM %s
+    `, strings.Join(t.columns, ","), t.tableName)
+
+    rows, err := t.db.Query(sqlStatement)
+    if err != nil && err != sql.ErrNoRows {
+        // log
+        return
+    }
+
+    ret, err := ReadRows(rows)
+    if err != nil {
+        // log
+        return
+    }
+
+    return
+}
+
+func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (ret {{.Package}}.{{.Name}}, err error) {
+    where := "{{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.Column}}=${{inc $i}}{{end}}"
+    sqlStatement := fmt.Sprintf(`SELECT %s
+        FROM %s
+        WHERE %s`,
+        strings.Join(t.columns, ","), 
+        t.tableName,
+        where,
+    )
+
+    row := t.db.QueryRow(sqlStatement,
+        {{range $i, $f := .PKFields}}{{$f.NameLower}},
+        {{end}}
+    )
+    ret, err = t.ReadRow(row)
+    if err != nil && err != sql.ErrNoRows {
+        // log
+        return
+    }
+    return
+}
+
+
+func (t *pg{{.Name}}Table)ReadRows(rows core.ScannableExt) (items []*{{.Package}}.{{.Name}}, err error){
+    for rows.Next() {
+        var item {{.Package}}.{{.Name}}
+        item, err := t.ReadRow(rows)
+        if err != nil {
+            // log
+            return
+        }
+        items = append(items, &item)
+    }
+    return
+}
+
+func (t *pg{{.Name}}Table)ReadRow(row core.Scannable) (item {{.Package}}.{{.Name}}, err error){
+    err = row.Scan(
+        {{range $i, $f := .Fields}} &item.{{$f.Name}},
+        {{end}}
+    )
+    return
+}

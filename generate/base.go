@@ -16,6 +16,7 @@ type Generator interface {
 	Methods() []Method
 	Fields() []Field
 	AllFields() []Field
+	IsInterface() bool
 }
 
 type generator struct {
@@ -71,7 +72,7 @@ func (g *generator) Imports() map[string]string {
 		}
 	} else {
 		for _, m := range g.Fields() {
-			imports.AddImportsFrom(m.field.Type())
+			imports.AddImportsFrom(m.UnderlyingType())
 		}
 	}
 
@@ -85,7 +86,7 @@ func (g *generator) AllFields() []Field {
 	numFields := g.strct.NumFields()
 	fields := make([]Field, numFields)
 	for i := 0; i < numFields; i++ {
-		fields[i] = Field{g, g.strct.Field(i), g.strct.Tag(i)}
+		fields[i] = NewField(g, g.strct.Field(i), g.strct.Tag(i), i)
 	}
 	return fields
 }
@@ -99,7 +100,7 @@ func (g *generator) Fields() []Field {
 	for i := 0; i < numFields; i++ {
 		f := g.strct.Field(i)
 		if f.Exported() {
-			fields = append(fields, Field{g, f, g.strct.Tag(i)})
+			fields = append(fields, NewField(g, f, g.strct.Tag(i), i))
 		}
 	}
 	return fields
@@ -118,13 +119,9 @@ func (g *generator) PackagePath() string {
 	return g.pkg.Path()
 }
 
-/*
-func (g *generator) qf(pkg *types.Package) string {
-	if g.inPkg && g.pkg == pkg {
-		return ""
-	}
-	return pkg.Name()
-}*/
+func (g *generator) IsInterface() bool {
+	return g.isInterface
+}
 
 func (g *generator) Methods() []Method {
 	if !g.isInterface {
