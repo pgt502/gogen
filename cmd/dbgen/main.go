@@ -39,8 +39,8 @@ func main() {
 
 	ifaceName := flag.Arg(0)
 
-	*pkgName = "../../testdata"
-	ifaceName = "Order"
+	//*pkgName = "../../testdata"
+	//ifaceName = "Order"
 
 	fmt.Printf("pkg is: %s, interface: %s\n", *pkgName, ifaceName)
 	if *pkgName == "" {

@@ -3,6 +3,7 @@ package generate
 import (
 	"fmt"
 	"go/types"
+	"strings"
 
 	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
@@ -11,6 +12,7 @@ import (
 type Generator interface {
 	Imports() map[string]string
 	Name() string
+	NameLower() string
 	Package() string
 	PackagePath() string
 	Methods() []Method
@@ -109,6 +111,10 @@ func (g *generator) Fields() []Field {
 // Name returns the type's name
 func (g *generator) Name() string {
 	return g.typeName
+}
+
+func (g *generator) NameLower() string {
+	return strings.ToLower(g.typeName)
 }
 
 func (g *generator) Package() string {

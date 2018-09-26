@@ -36,7 +36,7 @@ func (r *{{.NameLower}}Repo) Update(el {{.Package}}.{{.Name}}) (err error) {
 }
 
 func (r *{{.NameLower}}Repo) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
-    ret, err = r.db.GetAll(el)
+    ret, err = r.db.GetAll()
     return
 }
 
