@@ -1,8 +1,11 @@
 package {{.PGTablePackage}}
 
 import (
-    "fmt"
-    core "git.uk.guardtime.com/guardtime/volta/voltalib/core"
+    "database/sql"
+	"fmt"
+	"strings"
+    
+    core "github.com/pgt502/gogen/core"
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}

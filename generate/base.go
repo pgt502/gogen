@@ -3,11 +3,16 @@ package generate
 import (
 	"fmt"
 	"go/types"
+	"log"
 	"strings"
 
 	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
 )
+
+type BasicGenerator interface {
+	Generate(tpl string) string
+}
 
 type Generator interface {
 	Imports() map[string]string
@@ -34,14 +39,14 @@ func NewGenerator(typeName, pkgName string) (Generator, error) {
 	imp := importer.DefaultWithTestFiles()
 	pkg, err := imp.Import(pkgName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
-	fmt.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
+	log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
 	scope := pkg.Scope()
 	if scope == nil {
 		err = fmt.Errorf("package scope is nil")
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 	obj := scope.Lookup(typeName)
@@ -136,7 +141,6 @@ func (g *generator) Methods() []Method {
 	numMethods := g.iface.NumMethods()
 	methods := make([]Method, numMethods)
 	for i := 0; i < numMethods; i++ {
-		//methods[i] = generate.Method{g, g.iface.Method(i)}
 		methods[i] = *NewMethod(g.iface.Method(i))
 	}
 	return methods

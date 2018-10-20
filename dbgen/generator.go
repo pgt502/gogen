@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
 	"strings"
 
 	"github.com/pgt502/gogen/generate"
@@ -20,11 +21,9 @@ func NewGenerator(stuctName, pkgName string) (*Generator, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-
 	g := &Generator{
 		Generator: base,
 	}
-
 	return g, nil
 }
 
@@ -100,82 +99,18 @@ func (g *Generator) NonPKFields() []DbField {
 
 func (g *Generator) Generate(tpl string) string {
 	var buf bytes.Buffer
-	buf.WriteString("\n\n")
-	// templates
 	funcMap := template.FuncMap{
 		"inc": func(i int) int {
 			return i + 1
 		},
 	}
-	tmp := template.New("test").Funcs(funcMap)
+	tmp := template.New("tpl").Funcs(funcMap)
 	tmp, err := tmp.Parse(tpl)
 	if err != nil {
-		fmt.Printf("error parsing template: %s\n", err)
+		log.Printf("error parsing template: %s\n", err)
 		return ""
 	}
 	tmp.Execute(&buf, g)
 
 	return buf.String()
 }
-
-var tableInterfaceTpl = `
-	package {{.TablePackage}}
-
-	import (
-		"fmt"
-		{{range $path, $name := .Imports}}
-		{{$name}} "{{$path}}"{{end}}
-	)
-
-	type {{.Name}}Table interface{
-		Insert({{.Package}}.{{.Name}}) error
-		Update({{.Package}}.{{.Name}}) error
-		GetAll() ([]*{{.Package}}.{{.Name}}, error)
-	}
-`
-var pgtableStructTpl = `
-	package {{.PGTablePackage}}
-
-	import (
-		"fmt"
-		core "git.uk.guardtime.com/guardtime/volta/voltalib/core"
-		{{range $path, $name := .Imports}}
-		{{$name}} "{{$path}}"{{end}}
-	)
-
-	type pg{{.Name}}Table struct{
-		tableName string
-		db core.Queryable
-		columns []string
-		values string
-	}
-
-	func NewPg{{.Name}}Table(q core.Queryable) (t tables.{{.Name}}Table){
-		return &pg{{.Name}}Table{
-			tableName : "{{.Table}}",
-			db: q,
-			columns : []string{
-				{{range $i, $col := .Columns}} "{{$col}}",
-				{{end}}
-			},
-			values: "{{range $i, $col := .Columns}}{{if $i}},{{end}}${{inc $i}}{{end}}",
-		}
-	}
-
-	func (t *pg{{.Name}}Table) Insert(el {{.Package}}.{{.Name}}) (err error) {
-		sqlStatement := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", t.tableName, strings.Join(t.columns, ","), t.values)
-
-		_, err = t.db.Exec(sqlStatement,
-			{{range $i, $f := .Fields}} el.{{$f.Name}},
-			{{end}}
-		)
-
-		if err != nil {
-			
-		}
-
-		return
-	}
-
-
-`

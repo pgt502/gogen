@@ -1,7 +1,6 @@
 package {{.TablePackage}}
 
-import (
-    "fmt"
+import (    
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}

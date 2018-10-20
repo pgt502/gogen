@@ -26,6 +26,9 @@ var _ = Describe("Base", func() {
 				Expect(fields[2].Name()).To(Equal("CreatedAt"), "CreatedAt")
 				Expect(fields[1].Tag()).To(Equal(`json:"id"`), "Id tag")
 				Expect(fields[2].Tag()).To(Equal(`json:"created_at"`), "CreatedAt tag")
+				Expect(fields[0].Type()).To(Equal("string"), "Name type")
+				Expect(fields[1].Type()).To(Equal("int64"), "Id type")
+				Expect(fields[2].Type()).To(Equal("time.Time"), "CreatedAt type")
 			})
 		})
 		Context("from interface", func() {
@@ -33,7 +36,7 @@ var _ = Describe("Base", func() {
 				generator, err = NewGenerator("TestInterface", "github.com/pgt502/gogen/testdata")
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should return correct methods", func() {
+			It("should return correct methods with params and return types", func() {
 				methods := generator.Methods()
 				Expect(len(methods)).To(Equal(4))
 				Expect(methods[0].Name()).To(Equal("Method1"))

@@ -1,8 +1,6 @@
 package repos
 
 import (
-    "fmt"
-    
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}

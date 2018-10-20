@@ -1,7 +1,7 @@
 package dbgen
 
 import (
-	"fmt"
+	"log"
 	"strings"
 
 	"github.com/fatih/structtag"
@@ -35,7 +35,7 @@ func NewDbField(f generate.Field) DbField {
 func (f *dbField) parseTag(tag string) {
 	tags, err := structtag.Parse(tag)
 	if err != nil {
-		fmt.Printf("error parsing tags: %s\n", err)
+		log.Printf("error parsing tags: %s\n", err)
 		return
 	}
 	f.tags = tags
@@ -47,7 +47,7 @@ func (f *dbField) Column() string {
 	}
 	tag, err := f.tags.Get(TN_TAG_NAME_DB)
 	if err != nil {
-		fmt.Printf("error getting tag '%s': %s\n", TN_TAG_NAME_DB, err)
+		log.Printf("error getting tag '%s': %s\n", TN_TAG_NAME_DB, err)
 		return strings.ToLower(f.Name())
 	}
 	return tag.Name
@@ -83,7 +83,7 @@ func (f *dbField) DBType() string {
 	case "int64":
 		return "BIGINT"
 	default:
-		fmt.Printf("%s type not supported", t)
+		log.Printf("%s type not supported", t)
 		return t
 	}
 }
@@ -98,7 +98,7 @@ func (f *dbField) IsPK() bool {
 	}
 	tag, err := f.tags.Get(TN_TAG_NAME_DB)
 	if err != nil {
-		fmt.Printf("error getting tag '%s': %s\n", TN_TAG_NAME_DB, err)
+		log.Printf("error getting tag '%s': %s\n", TN_TAG_NAME_DB, err)
 		return false
 	}
 	return tag.HasOption(TN_TAG_NAME_PK)
