@@ -20,5 +20,6 @@ type TestInterface interface {
 	Method1() error
 	Method2(string, interface{}) (interface{}, error)
 	Method3([]*TestType) []TestType
-	Method4(...string)
+	Method4(inputs ...string)
+	Method5(test *TestType) (ret *TestType, err error)
 }

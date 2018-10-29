@@ -24,55 +24,85 @@ func (m Method) Name() string {
 }
 
 // ParamTypesVariadic returns the list of types for the params with ... for variadic params
-func (m Method) ParamTypesVariadic() []string {
+func (m Method) ParamTypesVariadic() []*Param {
 	sig := m.Signature()
 	types := m.listTypeNames(sig.Params())
 	n := len(types)
 	if n > 0 && sig.Variadic() {
-		types[n-1] = strings.Replace(types[n-1], "[]", "...", 1)
+		types[n-1].Type = strings.Replace(types[n-1].Type, "[]", "...", 1)
+	}
+	for i, el := range types {
+		if el.Name == "" {
+			el.Name = fmt.Sprintf("Param%d", i)
+		}
 	}
 	return types
 }
 
 // ParamTypes returns the list of types for the params
-func (m Method) ParamTypes() []string {
+func (m Method) ParamTypes() []*Param {
 	sig := m.Signature()
 	types := m.listTypeNames(sig.Params())
-	return types
-}
-
-// ReturnTypes returns the list of types for the params
-func (m Method) ReturnTypes() []string {
-	sig := m.Signature()
-	return m.listTypeNames(sig.Results())
-}
-
-// ReturnTypesVariadic returns the list of types for the params with ... for variadic params
-func (m Method) ReturnTypesVariadic() []string {
-	sig := m.Signature()
-	types := m.listTypeNames(sig.Results())
-	n := len(types)
-	if n > 0 && sig.Variadic() {
-		types[n-1] = strings.Replace(types[n-1], "[]", "...", 1)
+	for i, el := range types {
+		if el.Name == "" {
+			el.Name = fmt.Sprintf("Param%d", i)
+		}
 	}
 	return types
 }
 
-func (m Method) listTypeNames(t *types.Tuple) []string {
+// ReturnTypes returns the list of types for the params
+func (m Method) ReturnTypes() []*Param {
+	sig := m.Signature()
+	types := m.listTypeNames(sig.Results())
+	for i, el := range types {
+		if el.Name == "" {
+
+			el.Name = fmt.Sprintf("Ret%d", i)
+		}
+
+	}
+	fmt.Printf("return types: %+v\n", types)
+	return types
+}
+
+// ReturnTypesVariadic returns the list of types for the params with ... for variadic params
+func (m Method) ReturnTypesVariadic() []*Param {
+	sig := m.Signature()
+	types := m.listTypeNames(sig.Results())
+	n := len(types)
+	if n > 0 && sig.Variadic() {
+		types[n-1].Type = strings.Replace(types[n-1].Type, "[]", "...", 1)
+	}
+	for i, el := range types {
+		if el.Name == "" {
+			el.Name = fmt.Sprintf("Ret%d", i)
+		}
+	}
+	return types
+}
+
+func (m Method) listTypeNames(t *types.Tuple) []*Param {
 	num := t.Len()
-	list := make([]string, num)
+	list := make([]*Param, num)
 	for i := 0; i < num; i++ {
 		p := t.At(i).Type().String()
+		name := t.At(i).Name()
+
+		fmt.Printf("type is: %s, name: %s\n", p, name)
+
 		if strings.Contains(p, "/") {
 			if strings.HasPrefix(p, "[]*") {
-				list[i] = fmt.Sprintf("[]*%s", path.Base(p))
+				list[i] = &Param{Type: fmt.Sprintf("[]*%s", path.Base(p)), Name: name}
 			} else if strings.HasPrefix(p, "[]") {
-				list[i] = fmt.Sprintf("[]%s", path.Base(p))
+				list[i] = &Param{Type: fmt.Sprintf("[]%s", path.Base(p)), Name: name}
+			} else if strings.HasPrefix(p, "*") {
+				list[i] = &Param{Type: fmt.Sprintf("*%s", path.Base(p)), Name: name}
 			} else {
-				list[i] = path.Base(p)
+				list[i] = &Param{Type: path.Base(p), Name: name}
 			}
 		} else {
-			list[i] = p
+			list[i] = &Param{Type: p, Name: name}
 		}
 	}
 	return list
