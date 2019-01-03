@@ -82,6 +82,8 @@ func (f *dbField) DBType() string {
 		fallthrough
 	case "int64":
 		return "BIGINT"
+	case "bool":
+		return "BOOLEAN"
 	default:
 		log.Printf("%s type not supported", t)
 		return t

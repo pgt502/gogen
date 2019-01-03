@@ -14,7 +14,7 @@ type {{.Name}}Repo interface{
 }
 
 type {{.NameLower}}Repo struct{
-    db tables.{{.Name}}Db
+    db tables.{{.Name}}Table
 }
 
 func New{{.Name}}Repo(tb tables.{{.Name}}Table) ({{.Name}}Repo){

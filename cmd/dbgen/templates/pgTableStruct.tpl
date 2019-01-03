@@ -39,14 +39,15 @@ func (t *pg{{.Name}}Table) Insert(el {{.Package}}.{{.Name}}) (err error) {
     )
 
     if err != nil {
-        
+        //logging.LogErrore(err)
+        return
     }
 
     return
 }
 
 func (t *pg{{.Name}}Table) Update(el {{.Package}}.{{.Name}}) (err error) {
-    primaryKey := "{{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
+    primaryKey := "{{range $i, $f := .PKFields}}{{if $i}} AND {{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
     valueSet := "{{range $i, $f := .NonPKFields}}{{if $i}},{{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
 
     sqlStatement := fmt.Sprintf("UPDATE %s SET %s WHERE %s", t.tableName, valueSet, primaryKey)
@@ -56,7 +57,8 @@ func (t *pg{{.Name}}Table) Update(el {{.Package}}.{{.Name}}) (err error) {
     )
 
     if err != nil {
-        
+        //logging.LogErrore(err)
+        return
     }
 
     return
@@ -70,13 +72,13 @@ func (t *pg{{.Name}}Table) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
 
     rows, err := t.db.Query(sqlStatement)
     if err != nil && err != sql.ErrNoRows {
-        // log
+        //logging.LogErrore(err)
         return
     }
 
-    ret, err := ReadRows(rows)
+    ret, err = ReadRows(rows)
     if err != nil {
-        // log
+        //logging.LogErrore(err)
         return
     }
 
@@ -84,7 +86,7 @@ func (t *pg{{.Name}}Table) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
 }
 
 func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (ret {{.Package}}.{{.Name}}, err error) {
-    where := "{{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.Column}}=${{inc $i}}{{end}}"
+    where := "{{range $i, $f := .PKFields}}{{if $i}} AND {{end}}{{$f.Column}}=${{inc $i}}{{end}}"
     sqlStatement := fmt.Sprintf(`SELECT %s
         FROM %s
         WHERE %s`,
@@ -99,7 +101,7 @@ func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$
     )
     ret, err = t.ReadRow(row)
     if err != nil && err != sql.ErrNoRows {
-        // log
+        //logging.LogErrore(err)
         return
     }
     return
@@ -109,9 +111,9 @@ func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$
 func (t *pg{{.Name}}Table)ReadRows(rows core.ScannableExt) (items []*{{.Package}}.{{.Name}}, err error){
     for rows.Next() {
         var item {{.Package}}.{{.Name}}
-        item, err := t.ReadRow(rows)
+        item, err = t.ReadRow(rows)
         if err != nil {
-            // log
+            //logging.LogErrore(err)
             return
         }
         items = append(items, &item)
