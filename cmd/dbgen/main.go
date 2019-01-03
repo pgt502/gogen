@@ -68,4 +68,6 @@ func main() {
 	generate.GenerateFile("./templates/tableScript.down.tpl", path.Join(*output, fmt.Sprintf("nn_table_%s.down.sql", strings.ToLower(ifaceName))), g)
 	// generate repo:
 	generate.GenerateFile("./templates/tableRepo.tpl", path.Join(*output, fmt.Sprintf("%sRepo.go", strings.ToLower(ifaceName))), g)
+	// generate repo factory:
+	generate.GenerateFile("./templates/repoFactory.tpl", path.Join(*output, "repoFactory.go"), g)
 }
