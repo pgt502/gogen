@@ -3,12 +3,13 @@ package testdata
 import "time"
 
 type Order struct {
-	Product   string  `db:"name,pk"`
-	Id        string  `json:"id" db:"id,pk"`
-	Price     float64 `db:"price"`
-	CreatedAt int64   `db:"created_at"`
-	CreatedBy string  `db:"created_by"`
-	IsNew     bool    `db:"isNew"`
+	Product    string  `db:"name,pk"`
+	Id         string  `json:"id" db:"id,pk"`
+	Price      float64 `db:"price"`
+	CreatedAt  int64   `db:"created_at"`
+	CreatedBy  string  `db:"created_by"`
+	IsNew      bool    `db:"isNew"`
+	PriceLabel string
 }
 
 type TestType struct {

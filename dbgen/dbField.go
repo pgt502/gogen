@@ -22,6 +22,7 @@ type DbField interface {
 	generate.Field
 	Column() string
 	IsPK() bool
+	Ignore() bool
 }
 
 func NewDbField(f generate.Field) DbField {
@@ -104,4 +105,16 @@ func (f *dbField) IsPK() bool {
 		return false
 	}
 	return tag.HasOption(TN_TAG_NAME_PK)
+}
+
+func (f *dbField) Ignore() bool {
+	if f.tags == nil {
+		return false
+	}
+	tag, err := f.tags.Get(TN_TAG_NAME_DB)
+	if err != nil {
+		log.Printf("error getting tag '%s': %s\n", TN_TAG_NAME_DB, err)
+		return false
+	}
+	return tag.Name == "-"
 }

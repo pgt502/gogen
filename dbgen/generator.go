@@ -36,7 +36,7 @@ func (g *Generator) Schema() string {
 }
 
 func (g *Generator) TablePackage() string {
-	return "table"
+	return "tables"
 }
 
 func (g *Generator) PGTablePackage() string {
@@ -59,10 +59,13 @@ func (g *Generator) Fields() []DbField {
 	}
 	bfields := g.Generator.Fields()
 
-	dbFields := make([]DbField, len(bfields))
-	for i, el := range bfields {
+	dbFields := make([]DbField, 0)
+	for _, el := range bfields {
 		f := NewDbField(el)
-		dbFields[i] = f
+		if f.Ignore() {
+			continue
+		}
+		dbFields = append(dbFields, f)
 	}
 	return dbFields
 }
