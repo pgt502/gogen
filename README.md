@@ -19,6 +19,14 @@ $ go get github.com/pgt502/gogen
 It was inspired by [this](https://www.youtube.com/watch?v=uFXfTXSSt4I) talk where a mock is a struct which implements all the methods of the passed interface. Each method has a field in the mock struct named after its method with a postfix `Call`. All the input arguments are in a sub-struct `Receives` and all return arguments are available from the `Returns` sub-struct. This way test setups are very easy.
 Additionally, each method will have a `GetsCalled` field which will be incremented every time a method is called.
 
+### Usage
+To build and generate a mock file for an interface `TestInterface` in `testdata` package run:
+```text
+$ cd cmd/mockgen
+$ go build
+$ ./mockgen -pkg=github.com/pgt502/gogen/testdata TestInterface
+```
+
 ### For example
 Given the following interface:
 ```go
@@ -63,6 +71,14 @@ The generated files include:
 * repository.
 
 The generator looks at the struct tags (`db`) to determine the primary key and the names of the columns.
+
+## Usage
+To build and generate a mock file for the `Order` struct in `testdata` package run:
+```text
+$ cd cmd/dbgen
+$ go build
+$ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
+```
 
 ### For example
 The following struct (from github.com/pgt502/gogen/testdata package)
