@@ -1,4 +1,4 @@
-# Gogen: code generators for Go
+# Gogen: code generators for Go [![Build Status](https://travis-ci.com/pgt502/gogen.svg?branch=master)](https://travis-ci.com/pgt502/gogen)
 
 Package gogen consists of 2 code generators with multiple templates:
 * DB code generator
