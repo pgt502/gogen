@@ -33,7 +33,7 @@ $ ./mockgen -pkg=github.com/pgt502/gogen/testdata TestInterface
 ```
 
 #### Other options
-The following options can be overwritten by providing the relative flags:
+The following options can be overwritten by providing the respective flags:
 * `-o`: output folder (default: `.`)
 * `-t`: templates folder (default: `./templates`)
 
@@ -77,8 +77,9 @@ The mock generator uses the names of the arguments to generate meaningful struct
 Generates code from a struct necessary to build and access data from database. At the moment only `PostgreSQL` is supported.
 The generated files include:
 * migration scripts, 
-* table interface,
-* repository.
+* store interface,
+* table implementation,
+* store factory.
 
 The supported operations are the most common ones: insert, update, get all and get which fetches a single row from database by providing the primary key as parameters. These are to act as templates and is some cases will need to be tweaked to provide other operations, support joins or transactions.
 
@@ -95,7 +96,7 @@ $ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
 ```
 
 #### Other options
-The following options can be overwritten by providing the relative flags:
+The following options can be overwritten by providing the respective flags:
 * `-o`: output folder (default: `.`)
 * `-t`: templates folder (default: `./templates`)
 * `-p`: pluralise struct name in table name
@@ -136,23 +137,23 @@ CREATE TABLE IF NOT EXISTS public.order(
 DROP TABLE IF EXISTS public.order;
 ```
 
-* table interface
+* store interface
 ```go
-package table
+package stores
 
 import (
 	testdata "github.com/pgt502/gogen/testdata"
 )
 
-type OrderTable interface {
-	Insert(testdata.Order) error
+type OrderStore interface {
+	Add(testdata.Order) error
 	Update(testdata.Order) error
 	GetAll() ([]*testdata.Order, error)
 	Get(product string, id string) (testdata.Order, error)
 }
 ```
 
-* table interface implementation for postgres
+* store interface implementation for postgres
 ```go
 package postgress
 
@@ -172,9 +173,9 @@ type pgOrderTable struct {
 	values    string
 }
 
-func NewPgOrderTable(q core.Queryable) (t tables.OrderTable) {
+func NewPgOrderTable(q core.Queryable) (t stores.OrderStore) {
 	return &pgOrderTable{
-		tableName: "order",
+		tableName: "orders",
 		db:        q,
 		columns: []string{
 			"name",
@@ -188,7 +189,7 @@ func NewPgOrderTable(q core.Queryable) (t tables.OrderTable) {
 	}
 }
 
-func (t *pgOrderTable) Insert(el testdata.Order) (err error) {
+func (t *pgOrderTable) Add(el testdata.Order) (err error) {
 	sqlStatement := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", t.tableName, strings.Join(t.columns, ","), t.values)
 
 	_, err = t.db.Exec(sqlStatement,
@@ -296,51 +297,40 @@ func (t *pgOrderTable) ReadRow(row core.Scannable) (item testdata.Order, err err
 	)
 	return
 }
-
 ```
-* repository 
+* store factory 
 ```go
-package repos
+package stores
 
 import (
 	testdata "github.com/pgt502/gogen/testdata"
 )
 
-type OrderRepo interface {
-	Create(testdata.Order) error
-	Update(testdata.Order) error
-	GetAll() ([]*testdata.Order, error)
-	Get(product string, id string) (testdata.Order, error)
+type StoreFactory interface {
+	GetOrderStore() OrderStore
 }
 
-type orderRepo struct {
-	db tables.OrderTable
+type storeFactory struct {
+	storeType core.StorageType
+	db        core.Queryable
 }
 
-func NewOrderRepo(tb tables.OrderTable) OrderRepo {
-	return &orderRepo{
-		db: tb,
+func NewStoreFactory(storeType core.StorageType, q core.Queryable) StoreFactory {
+	return &storeFactory{
+		db:        q,
+		storeType: storeType,
 	}
 }
 
-func (r *orderRepo) Create(el testdata.Order) (err error) {
-	err = r.db.Insert(el)
-	return
-}
-
-func (r *orderRepo) Update(el testdata.Order) (err error) {
-	err = r.db.Update(el)
-	return
-}
-
-func (r *orderRepo) GetAll() (ret []*testdata.Order, err error) {
-	ret, err = r.db.GetAll()
-	return
-}
-
-func (r *orderRepo) Get(product string, id string) (ret testdata.Order, err error) {
-	ret, err = r.db.Get(product, id)
-	return
+func (f *storeFactory) GetOrderStore() OrderStore {
+	switch f.storeType {
+	case core.STORETYPE_POSTGRES:
+		table := postgress.NewPgOrderTable(f.db)
+		return table
+	default:
+		// not supported
+	}
+	return nil
 }
 
 ```
