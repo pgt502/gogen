@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"path"
 	"strings"
 
 	"github.com/pgt502/gogen/generate"
@@ -26,8 +25,10 @@ func (i *arrayFlags) Set(value string) error {
 var myFlags arrayFlags
 
 var (
-	pkgName = flag.String("pkg", ".", "package name of the interface to generate the mock from")
-	output  = flag.String("o", ".", "output folder")
+	pkgName   = flag.String("pkg", ".", "package name of the interface to generate the mock from")
+	output    = flag.String("o", ".", "output folder")
+	templates = flag.String("t", "./templates", "templates folder")
+	pluralise = flag.Bool("p", false, "pluralise the table name")
 )
 
 func main() {
@@ -49,7 +50,7 @@ func main() {
 		log.Println("struct needs to be provided as an argument")
 		return
 	}
-	g, err := dbgen.NewGenerator(ifaceName, *pkgName)
+	g, err := dbgen.NewGenerator(ifaceName, *pkgName, dbgen.Pluralise(*pluralise))
 	if err != nil {
 		log.Println(err)
 		return
@@ -59,15 +60,5 @@ func main() {
 		return
 	}
 
-	// generate interface:
-	generate.GenerateFile("./templates/tableInterface.tpl", path.Join(*output, fmt.Sprintf("%sTable.go", strings.ToLower(ifaceName))), g)
-	// generate pgTable:
-	generate.GenerateFile("./templates/pgTableStruct.tpl", path.Join(*output, fmt.Sprintf("pg%sTable.go", ifaceName)), g)
-	// generate postgresql script
-	generate.GenerateFile("./templates/tableScript.up.tpl", path.Join(*output, fmt.Sprintf("nn_table_%s.up.sql", strings.ToLower(ifaceName))), g)
-	generate.GenerateFile("./templates/tableScript.down.tpl", path.Join(*output, fmt.Sprintf("nn_table_%s.down.sql", strings.ToLower(ifaceName))), g)
-	// generate repo:
-	generate.GenerateFile("./templates/tableRepo.tpl", path.Join(*output, fmt.Sprintf("%sRepo.go", strings.ToLower(ifaceName))), g)
-	// generate repo factory:
-	generate.GenerateFile("./templates/repoFactory.tpl", path.Join(*output, "repoFactory.go"), g)
+	generate.GenerateFilesFromTemplates(strings.ToLower(ifaceName), *templates, *output, g)
 }

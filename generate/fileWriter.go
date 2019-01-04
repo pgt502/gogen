@@ -1,20 +1,22 @@
 package generate
 
 import (
+	"fmt"
 	"go/format"
 	"io/ioutil"
 	"log"
+	"path"
 	"path/filepath"
 	"strings"
 )
 
-func GenerateFile(tplPath, dstFile string, g BasicGenerator) {
+func GenerateFileFromTemplate(tplPath, dstFile string, g BasicGenerator) {
 	tpl, err := readTemplate(tplPath)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	content := g.Generate(tpl)
+	content := g.Generate(string(tpl))
 	if strings.HasSuffix(dstFile, ".go") {
 		formatted, err := format.Source([]byte(content))
 		if err != nil {
@@ -33,7 +35,39 @@ func GenerateFile(tplPath, dstFile string, g BasicGenerator) {
 	writeToFile(dstFile, content)
 }
 
-func readTemplate(fn string) (content string, err error) {
+func GenerateFilesFromTemplates(ifaceName, tplPath, dstDir string, g BasicGenerator) {
+	fis, err := ioutil.ReadDir(tplPath)
+	if err != nil {
+		log.Printf("error reading files from dir: %s, err: %s", tplPath, err)
+		return
+	}
+	var templates []string
+	for _, fi := range fis {
+		if fi.IsDir() {
+			continue
+		}
+		templates = append(templates, fi.Name())
+	}
+
+	for _, el := range templates {
+		var fn string
+
+		ind := strings.Index(el, "%s")
+		switch ind {
+		case 0:
+			fn = fmt.Sprintf(el, ifaceName)
+		case -1:
+			fn = el
+		default:
+			fn = fmt.Sprintf(el, strings.Title(ifaceName))
+		}
+		dstFile := path.Join(dstDir, fn)
+		dstFile = strings.TrimSuffix(dstFile, ".tpl")
+		GenerateFileFromTemplate(path.Join(tplPath, el), dstFile, g)
+	}
+}
+
+func readTemplate(fn string) (content []byte, err error) {
 	fn, err = filepath.Abs(fn)
 	if err != nil {
 		log.Println(err)
@@ -44,7 +78,7 @@ func readTemplate(fn string) (content string, err error) {
 		log.Println(err)
 		return
 	}
-	content = string(bytes)
+	content = bytes
 	return
 }
 

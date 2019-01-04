@@ -19,6 +19,23 @@ $ go get github.com/pgt502/gogen
 It was inspired by [this](https://www.youtube.com/watch?v=uFXfTXSSt4I) talk where a mock is a struct which implements all the methods of the passed interface. Each method has a field in the mock struct named after its method with a postfix `Call`. All the input arguments are in a sub-struct `Receives` and all return arguments are available from the `Returns` sub-struct. This way test setups are very easy.
 Additionally, each method will have a `GetsCalled` field which will be incremented every time a method is called.
 
+### Usage
+To build the mock generator run:
+
+```text
+$ cd cmd/mockgen
+$ go build
+```
+
+To generate a mock file for an interface, provide a (full) package name in `-pkg` parameter followed by the interface name. For example, to generate a mock for  `TestInterface` in `github.com/pgt502/gogen/testdata` package run:
+```text
+$ ./mockgen -pkg=github.com/pgt502/gogen/testdata TestInterface
+```
+
+#### Other options
+The following options can be overwritten by providing the relative flags:
+* `-o`: output folder (default: `.`)
+* `-t`: templates folder (default: `./templates`)
 
 ### For example
 Given the following interface:
@@ -53,14 +70,6 @@ func(m *MockTester)Test(input string) (err error) {
 }
 ```
 
-### Usage
-To build and generate a mock file for an interface `TestInterface` in `testdata` package run:
-```text
-$ cd cmd/mockgen
-$ go build
-$ ./mockgen -pkg=github.com/pgt502/gogen/testdata TestInterface
-```
-
 ### Notes
 The mock generator uses the names of the arguments to generate meaningful struct fields. If the arguments dont have names they will be named `param0`, `param1`... for input parameters and `ret0`, `ret1`... for output parameters.  
 
@@ -70,6 +79,26 @@ The generated files include:
 * migration scripts, 
 * table interface,
 * repository.
+
+The supported operations are the most common ones: insert, update, get all and get which fetches a single row from database by providing the primary key as parameters. These are to act as templates and is some cases will need to be tweaked to provide other operations, support joins or transactions.
+
+### Usage
+To build the db code generator run:
+```text
+$ cd cmd/dbgen
+$ go build
+```
+
+To generate db code for a struct, provide a (full) package name in `-pkg` parameter followed by the struct name. For example, for the `Order` struct in `github.com/pgt502/gogen/testdata` package run:
+```text
+$ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
+```
+
+#### Other options
+The following options can be overwritten by providing the relative flags:
+* `-o`: output folder (default: `.`)
+* `-t`: templates folder (default: `./templates`)
+* `-p`: pluralise struct name in table name
 
 ### Struct tags
 The generator looks at the struct tags (`db`) to determine the primary key and the names of the columns. The first part of the tag is the name of the column in the table and the second one (optional) indicates if the column is part of the primary key. The fields with the `db:"-"` tag will be ignored.
@@ -85,7 +114,7 @@ type Order struct {
 	CreatedAt int64   `db:"created_at"`
 	CreatedBy string  `db:"created_by"`
 	IsNew     bool    `db:"isNew"`
-	PriceLabel string // this field will be ignored
+	PriceLabel string `db:"-"` // this field will be ignored
 }
 ```
 will generate:
@@ -314,12 +343,4 @@ func (r *orderRepo) Get(product string, id string) (ret testdata.Order, err erro
 	return
 }
 
-```
-
-## Usage
-To build and generate a mock file for the `Order` struct in `testdata` package run:
-```text
-$ cd cmd/dbgen
-$ go build
-$ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
 ```

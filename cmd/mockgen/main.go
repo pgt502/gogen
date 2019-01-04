@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"path"
 	"strings"
 
 	"github.com/pgt502/gogen/generate"
@@ -12,8 +11,9 @@ import (
 )
 
 var (
-	pkgName = flag.String("pkg", ".", "package name of the interface to generate the mock from")
-	output  = flag.String("o", ".", "output folder")
+	pkgName   = flag.String("pkg", ".", "package name of the interface to generate the mock from")
+	output    = flag.String("o", ".", "output folder")
+	templates = flag.String("t", "./templates", "templates folder")
 )
 
 func main() {
@@ -42,6 +42,5 @@ func main() {
 		log.Printf("provided type: [%s] is not an interface", ifaceName)
 		return
 	}
-
-	generate.GenerateFile("./templates/mock.tpl", path.Join(*output, fmt.Sprintf("Mock%s.go", strings.ToLower(ifaceName))), g)
+	generate.GenerateFilesFromTemplates(strings.ToLower(ifaceName), *templates, *output, g)
 }

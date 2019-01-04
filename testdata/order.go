@@ -9,7 +9,7 @@ type Order struct {
 	CreatedAt  int64   `db:"created_at"`
 	CreatedBy  string  `db:"created_by"`
 	IsNew      bool    `db:"isNew"`
-	PriceLabel string
+	PriceLabel string  `db:"-"`
 }
 
 type TestType struct {

@@ -13,22 +13,32 @@ import (
 type Generator struct {
 	generate.Generator
 	name string
+	opts Options
 }
 
-func NewGenerator(stuctName, pkgName string) (*Generator, error) {
+func NewGenerator(stuctName, pkgName string, options ...Option) (*Generator, error) {
 	base, err := generate.NewGenerator(stuctName, pkgName)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
+	opts := &Options{}
+	for _, op := range options {
+		op(opts)
+	}
 	g := &Generator{
 		Generator: base,
+		opts:      *opts,
 	}
 	return g, nil
 }
 
 func (g *Generator) Table() string {
-	return strings.ToLower(g.Name())
+	name := strings.ToLower(g.Name())
+	if g.opts.Pluralise {
+		name = fmt.Sprintf("%ss", name)
+	}
+	return name
 }
 
 func (g *Generator) Schema() string {
