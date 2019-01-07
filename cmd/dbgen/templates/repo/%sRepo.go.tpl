@@ -11,6 +11,7 @@ type {{.Name}}Repo interface{
     Update({{.Package}}.{{.Name}}) error
     GetAll() ([]*{{.Package}}.{{.Name}}, error)
     Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) ({{.Package}}.{{.Name}}, error)
+    Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) error
 }
 
 type {{.NameLower}}Repo struct{
@@ -40,5 +41,10 @@ func (r *{{.NameLower}}Repo) GetAll() (ret []*{{.Package}}.{{.Name}}, err error)
 
 func (r *{{.NameLower}}Repo) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (ret {{.Package}}.{{.Name}}, err error) {
     ret, err = r.db.Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}}{{end}})
+    return
+}
+
+func (r *{{.NameLower}}Repo) Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (err error) {
+    err = r.db.Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}}{{end}})
     return
 }

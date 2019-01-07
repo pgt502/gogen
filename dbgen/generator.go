@@ -50,7 +50,7 @@ func (g *Generator) TablePackage() string {
 }
 
 func (g *Generator) PGTablePackage() string {
-	return "postgress"
+	return "postgres"
 }
 
 func (g *Generator) Columns() []string {
