@@ -150,12 +150,13 @@ type OrderStore interface {
 	Update(testdata.Order) error
 	GetAll() ([]*testdata.Order, error)
 	Get(product string, id string) (testdata.Order, error)
+	Delete(product string, id string) error
 }
 ```
 
 * store interface implementation for postgres
 ```go
-package postgress
+package postgres
 
 import (
 	"database/sql"
@@ -270,6 +271,28 @@ func (t *pgOrderTable) Get(product string, id string) (ret testdata.Order, err e
 		//logging.LogErrore(err)
 		return
 	}
+	return
+}
+
+func (t *pgOrderTable) Delete(product string, id string) (err error) {
+	where := "name=$1 AND id=$2"
+	sqlStatement := fmt.Sprintf(`DELETE 
+        FROM %s
+        WHERE %s`,
+		t.tableName,
+		where,
+	)
+
+	_, err = t.db.Exec(sqlStatement,
+		product,
+		id,
+	)
+
+	if err != nil {
+		//logging.LogErrore(err)
+		return
+	}
+
 	return
 }
 

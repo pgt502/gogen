@@ -107,6 +107,28 @@ func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$
     return
 }
 
+func (t *pg{{.Name}}Table)Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (err error){
+    where := "{{range $i, $f := .PKFields}}{{if $i}} AND {{end}}{{$f.Column}}=${{inc $i}}{{end}}"
+    sqlStatement := fmt.Sprintf(`DELETE 
+        FROM %s
+        WHERE %s`,        
+        t.tableName,
+        where,
+    )
+
+    _, err = t.db.Exec(sqlStatement,
+        {{range $i, $f := .PKFields}}{{$f.NameLower}},
+        {{end}}
+    )
+
+    if err != nil {
+        //logging.LogErrore(err)
+        return
+    }
+
+    return
+}
+
 
 func (t *pg{{.Name}}Table)ReadRows(rows core.ScannableExt) (items []*{{.Package}}.{{.Name}}, err error){
     for rows.Next() {
