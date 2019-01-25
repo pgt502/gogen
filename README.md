@@ -98,13 +98,20 @@ $ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
 #### Other options
 The following options can be overwritten by providing the respective flags:
 * `-o`: output folder (default: `.`)
-* `-t`: templates folder (default: `./templates`)
+* `-t`: templates folder (default: `./templates/repo`)
 * `-p`: pluralise struct name in table name
 
 ### Struct tags
 The generator looks at the struct tags (`db`) to determine the primary key and the names of the columns. The first part of the tag is the name of the column in the table and the second one (optional) indicates if the column is part of the primary key. The fields with the `db:"-"` tag will be ignored.
 
-### For example
+### Templates
+In the repository, there are 2 sets of templates included: 
+* `./templates/repo`
+* `./templates/store` 
+
+Both of them have different styles of implementing access to the database (repository vs store). The repository style has an extra layer of abstraction which hides the `database/sql` package dependency.
+
+### Example using the "repo" templates
 The following struct (from github.com/pgt502/gogen/testdata package)
 
 ```go
@@ -119,6 +126,393 @@ type Order struct {
 }
 ```
 will generate:
+
+* migration up script
+```sql
+CREATE TABLE IF NOT EXISTS public.order(
+     "name" TEXT NOT NULL,
+     "id" TEXT NOT NULL,
+     "price" DOUBLE PRECISION NOT NULL,
+     "created_at" BIGINT NOT NULL,
+     "created_by" TEXT NOT NULL,
+     "isNew" BOOLEAN NOT NULL,
+    
+    PRIMARY KEY ("name","id")
+);
+```
+* migration down script
+```sql
+DROP TABLE IF EXISTS public.order;
+```
+
+* table interface
+```go
+package tables
+
+import (
+	"database/sql"
+	testdata "github.com/pgt502/gogen/testdata"
+)
+
+type OrderTable interface {
+	Insert(tx *sql.Tx, order testdata.Order) (err error)
+	Update(tx *sql.Tx, order testdata.Order) (err error)
+	GetAll() (orders []*testdata.Order, err error)
+	Get(product string, id string) (order testdata.Order, err error)
+	Delete(tx *sql.Tx, product string, id string) (err error)
+}
+```
+
+* table interface implementation for postgres
+```go
+package postgres
+
+import (
+	"database/sql"
+	"fmt"
+	"strings"
+
+	core "github.com/pgt502/gogen/core"
+	testdata "github.com/pgt502/gogen/testdata"
+
+	"github.com/pkg/errors"
+)
+
+type pgOrderTable struct {
+	tableName string
+	db        core.Queryable
+	columns   []string
+	values    string
+}
+
+func NewPgOrderTable(q core.Queryable) (t tables.OrderTable) {
+	return &pgOrderTable{
+		tableName: "orders",
+		db:        q,
+		columns: []string{
+			"name",
+			"id",
+			"price",
+			"created_at",
+			"created_by",
+			"isNew",
+		},
+		values: "$1,$2,$3,$4,$5,$6",
+	}
+}
+
+func (t *pgOrderTable) Insert(tx *sql.Tx, el testdata.Order) (err error) {
+	ownTx := tx == nil
+	if ownTx {
+		tx, err = t.db.Begin()
+		if err != nil {
+			err = errors.Wrap(err, "error creating tx")
+			return
+		}
+	}
+	sqlStatement := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", t.tableName, strings.Join(t.columns, ","), t.values)
+
+	var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(sqlStatement,
+		el.Product,
+		el.Id,
+		el.Price,
+		el.CreatedAt,
+		el.CreatedBy,
+		el.IsNew,
+	)
+
+	if err != nil {
+		err = errors.Wrap(err, "error inserting")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	if ownTx {
+		err = tx.Commit()
+		if err != nil {
+			err = errors.Wrap(err, "error committing tx")
+			return
+		}
+	}
+
+	return
+}
+
+func (t *pgOrderTable) Update(tx *sql.Tx, el testdata.Order) (err error) {
+	ownTx := tx == nil
+	if ownTx {
+		tx, err = t.db.Begin()
+		if err != nil {
+			err = errors.Wrap(err, "error creating tx")
+			return
+		}
+	}
+	primaryKey := "name=$1 AND id=$2"
+	valueSet := "price=$3,created_at=$4,created_by=$5,isNew=$6"
+
+	sqlStatement := fmt.Sprintf("UPDATE %s SET %s WHERE %s", t.tableName, valueSet, primaryKey)
+
+	var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(sqlStatement,
+		el.Product,
+		el.Id,
+		el.Price,
+		el.CreatedAt,
+		el.CreatedBy,
+		el.IsNew,
+	)
+
+	if err != nil {
+		err = errors.Wrap(err, "error updating")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	if ownTx {
+		err = tx.Commit()
+		if err != nil {
+			err = errors.Wrap(err, "error committing tx")
+			return
+		}
+	}
+
+	return
+}
+
+func (t *pgOrderTable) GetAll() (ret []*testdata.Order, err error) {
+	sqlStatement := fmt.Sprintf(`SELECT %s
+        FROM %s
+    `, strings.Join(t.columns, ","), t.tableName)
+
+	rows, err := t.db.Query(sqlStatement)
+	if err != nil && err != sql.ErrNoRows {
+		err = errors.Wrap(err, "error querying all")
+		return
+	}
+
+	ret, err = t.ReadRows(rows)
+	if err != nil {
+		err = errors.Wrap(err, "error reading all")
+		return
+	}
+
+	return
+}
+
+func (t *pgOrderTable) Get(product string, id string) (ret testdata.Order, err error) {
+	where := "name=$1 AND id=$2"
+	sqlStatement := fmt.Sprintf(`SELECT %s
+        FROM %s
+        WHERE %s`,
+		strings.Join(t.columns, ","),
+		t.tableName,
+		where,
+	)
+
+	row := t.db.QueryRow(sqlStatement,
+		product,
+		id,
+	)
+	ret, err = t.ReadRow(row)
+	if err != nil && err != sql.ErrNoRows {
+		err = errors.Wrap(err, "error fetching")
+		return
+	}
+	return
+}
+
+func (t *pgOrderTable) Delete(tx *sql.Tx, product string, id string) (err error) {
+	ownTx := tx == nil
+	if ownTx {
+		tx, err = t.db.Begin()
+		if err != nil {
+			err = errors.Wrap(err, "error creating tx")
+			return
+		}
+	}
+	where := "name=$1 AND id=$2"
+	sqlStatement := fmt.Sprintf(`DELETE 
+        FROM %s
+        WHERE %s`,
+		t.tableName,
+		where,
+	)
+
+	var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(sqlStatement,
+		product,
+		id,
+	)
+
+	if err != nil {
+		err = errors.Wrap(err, "error deleting")
+		if ownTx {
+			tx.Rollback()
+		}
+		return
+	}
+	if ownTx {
+		err = tx.Commit()
+		if err != nil {
+			err = errors.Wrap(err, "error committing tx")
+			return
+		}
+	}
+
+	return
+}
+
+func (t *pgOrderTable) ReadRows(rows core.ScannableExt) (items []*testdata.Order, err error) {
+	for rows.Next() {
+		var item testdata.Order
+		item, err = t.ReadRow(rows)
+		if err != nil {
+			err = errors.Wrap(err, "error reading row from db")
+			return
+		}
+		items = append(items, &item)
+	}
+	return
+}
+
+func (t *pgOrderTable) ReadRow(row core.Scannable) (item testdata.Order, err error) {
+	err = row.Scan(
+		&item.Product,
+		&item.Id,
+		&item.Price,
+		&item.CreatedAt,
+		&item.CreatedBy,
+		&item.IsNew,
+	)
+	return
+}
+```
+
+* repository
+```go
+package repos
+
+import (
+	testdata "github.com/pgt502/gogen/testdata"
+)
+
+type OrderRepo interface {
+	Create(order testdata.Order) (err error)
+	Update(order testdata.Order) (err error)
+	GetAll() (orders []*testdata.Order, err error)
+	Get(product string, id string) (order testdata.Order, err error)
+	Delete(product string, id string) (err error)
+}
+
+type orderRepo struct {
+	db tables.OrderTable
+}
+
+func NewOrderRepo(tb tables.OrderTable) OrderRepo {
+	return &orderRepo{
+		db: tb,
+	}
+}
+
+func (r *orderRepo) Create(el testdata.Order) (err error) {
+	err = r.db.Insert(nil, el)
+	return
+}
+
+func (r *orderRepo) Update(el testdata.Order) (err error) {
+	err = r.db.Update(nil, el)
+	return
+}
+
+func (r *orderRepo) GetAll() (ret []*testdata.Order, err error) {
+	ret, err = r.db.GetAll()
+	return
+}
+
+func (r *orderRepo) Get(product string, id string) (ret testdata.Order, err error) {
+	ret, err = r.db.Get(product, id)
+	return
+}
+
+func (r *orderRepo) Delete(product string, id string) (err error) {
+	err = r.db.Delete(nil, product, id)
+	return
+}
+```
+
+* repository factory
+```go
+package repos
+
+import (
+	testdata "github.com/pgt502/gogen/testdata"
+)
+
+type RepoFactory interface {
+	GetOrderRepo() OrderRepo
+}
+
+type repoFactory struct {
+	storeType core.StorageType
+	db        core.Queryable
+}
+
+func NewRepoFactory(storeType core.StorageType, q core.Queryable) RepoFactory {
+	return &repoFactory{
+		db:        q,
+		storeType: storeType,
+	}
+}
+
+func (f *repoFactory) GetOrderRepo() OrderRepo {
+	switch f.storeType {
+	case core.STORETYPE_POSTGRES:
+		table := postgres.NewPgOrderTable(f.db)
+		r := NewOrderRepo(table)
+		return r
+	default:
+		// not supported
+	}
+	return nil
+}
+```
+
+### Example using the "store" templates
+The same struct as above will generate:
+
 * migration up script
 ```sql
 CREATE TABLE IF NOT EXISTS public.order(
@@ -165,6 +559,8 @@ import (
 
 	core "github.com/pgt502/gogen/core"
 	testdata "github.com/pgt502/gogen/testdata"
+
+	"github.com/pkg/errors"
 )
 
 type pgOrderTable struct {
@@ -203,7 +599,7 @@ func (t *pgOrderTable) Add(el testdata.Order) (err error) {
 	)
 
 	if err != nil {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error adding")
 		return
 	}
 
@@ -225,7 +621,7 @@ func (t *pgOrderTable) Update(el testdata.Order) (err error) {
 	)
 
 	if err != nil {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error updating")
 		return
 	}
 
@@ -239,13 +635,13 @@ func (t *pgOrderTable) GetAll() (ret []*testdata.Order, err error) {
 
 	rows, err := t.db.Query(sqlStatement)
 	if err != nil && err != sql.ErrNoRows {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error querying all")
 		return
 	}
 
 	ret, err = ReadRows(rows)
 	if err != nil {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error reading rows")
 		return
 	}
 
@@ -268,7 +664,7 @@ func (t *pgOrderTable) Get(product string, id string) (ret testdata.Order, err e
 	)
 	ret, err = t.ReadRow(row)
 	if err != nil && err != sql.ErrNoRows {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error getting")
 		return
 	}
 	return
@@ -289,7 +685,7 @@ func (t *pgOrderTable) Delete(product string, id string) (err error) {
 	)
 
 	if err != nil {
-		//logging.LogErrore(err)
+		err = errors.Wrap(err, "error deleting")
 		return
 	}
 
@@ -301,7 +697,7 @@ func (t *pgOrderTable) ReadRows(rows core.ScannableExt) (items []*testdata.Order
 		var item testdata.Order
 		item, err = t.ReadRow(rows)
 		if err != nil {
-			//logging.LogErrore(err)
+			err = errors.Wrap(err, "error reading row from db")
 			return
 		}
 		items = append(items, &item)

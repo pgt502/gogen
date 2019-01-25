@@ -9,6 +9,7 @@ import (
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}
+    "github.com/pkg/errors"
 )
 
 type pg{{.Name}}Table struct{
@@ -39,7 +40,7 @@ func (t *pg{{.Name}}Table) Add(el {{.Package}}.{{.Name}}) (err error) {
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error adding")
         return
     }
 
@@ -57,7 +58,7 @@ func (t *pg{{.Name}}Table) Update(el {{.Package}}.{{.Name}}) (err error) {
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error updating")
         return
     }
 
@@ -72,13 +73,13 @@ func (t *pg{{.Name}}Table) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
 
     rows, err := t.db.Query(sqlStatement)
     if err != nil && err != sql.ErrNoRows {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error querying all")
         return
     }
 
     ret, err = ReadRows(rows)
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error reading rows")
         return
     }
 
@@ -101,7 +102,7 @@ func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$
     )
     ret, err = t.ReadRow(row)
     if err != nil && err != sql.ErrNoRows {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error getting")
         return
     }
     return
@@ -122,7 +123,7 @@ func (t *pg{{.Name}}Table)Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error deleting")
         return
     }
 
@@ -135,7 +136,7 @@ func (t *pg{{.Name}}Table)ReadRows(rows core.ScannableExt) (items []*{{.Package}
         var item {{.Package}}.{{.Name}}
         item, err = t.ReadRow(rows)
         if err != nil {
-            //logging.LogErrore(err)
+            err = errors.Wrap(err, "error reading row from db")
             return
         }
         items = append(items, &item)

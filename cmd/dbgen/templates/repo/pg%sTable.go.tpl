@@ -9,6 +9,7 @@ import (
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}
+    "github.com/pkg/errors"
 )
 
 type pg{{.Name}}Table struct{
@@ -30,35 +31,94 @@ func NewPg{{.Name}}Table(q core.Queryable) (t tables.{{.Name}}Table){
     }
 }
 
-func (t *pg{{.Name}}Table) Insert(el {{.Package}}.{{.Name}}) (err error) {
+func (t *pg{{.Name}}Table) Insert(tx *sql.Tx, el {{.Package}}.{{.Name}}) (err error) {
+    ownTx := tx == nil
+    if ownTx {
+        tx, err = t.db.Begin()
+        if err != nil{
+            err = errors.Wrap(err, "error creating tx")
+            return
+        }
+    }
     sqlStatement := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", t.tableName, strings.Join(t.columns, ","), t.values)
 
-    _, err = t.db.Exec(sqlStatement,
+    var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+        if ownTx {
+		    tx.Rollback()
+        }
+		return
+	}
+	defer stmt.Close()
+
+    _, err = stmt.Exec(sqlStatement,
         {{range $i, $f := .Fields}} el.{{$f.Name}},
         {{end}}
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error inserting")
+        if ownTx {
+            tx.Rollback()
+        }
         return
+    }
+    if ownTx {
+        err = tx.Commit()
+        if err != nil{
+            err = errors.Wrap(err, "error committing tx")
+            return
+        }
     }
 
     return
 }
 
-func (t *pg{{.Name}}Table) Update(el {{.Package}}.{{.Name}}) (err error) {
+func (t *pg{{.Name}}Table) Update(tx *sql.Tx, el {{.Package}}.{{.Name}}) (err error) {
+    ownTx := tx == nil
+    if ownTx {
+        tx, err = t.db.Begin()
+        if err != nil{
+            err = errors.Wrap(err, "error creating tx")
+            return
+        }
+    }
     primaryKey := "{{range $i, $f := .PKFields}}{{if $i}} AND {{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
     valueSet := "{{range $i, $f := .NonPKFields}}{{if $i}},{{end}}{{$f.Column}}=${{$f.ColumnIndex}}{{end}}"
 
     sqlStatement := fmt.Sprintf("UPDATE %s SET %s WHERE %s", t.tableName, valueSet, primaryKey)
-    _, err = t.db.Exec(sqlStatement,
+
+    var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+        if ownTx {
+		    tx.Rollback()
+        }
+		return
+	}
+	defer stmt.Close()
+
+    _, err = stmt.Exec(sqlStatement,
         {{range $i, $f := .Fields}} el.{{$f.Name}},
         {{end}}
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error updating")
+        if ownTx {
+            tx.Rollback()
+        }
         return
+    }
+    if ownTx {
+        err = tx.Commit()
+        if err != nil{
+            err = errors.Wrap(err, "error committing tx")
+            return
+        }
     }
 
     return
@@ -72,13 +132,13 @@ func (t *pg{{.Name}}Table) GetAll() (ret []*{{.Package}}.{{.Name}}, err error){
 
     rows, err := t.db.Query(sqlStatement)
     if err != nil && err != sql.ErrNoRows {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error querying all")
         return
     }
 
-    ret, err = ReadRows(rows)
+    ret, err = t.ReadRows(rows)
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error reading all")
         return
     }
 
@@ -101,13 +161,21 @@ func (t *pg{{.Name}}Table) Get({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$
     )
     ret, err = t.ReadRow(row)
     if err != nil && err != sql.ErrNoRows {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error fetching")
         return
     }
     return
 }
 
-func (t *pg{{.Name}}Table)Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (err error){
+func (t *pg{{.Name}}Table)Delete(tx *sql.Tx, {{range $i, $f := .PKFields}}{{if $i}},{{end}}{{$f.NameLower}} {{$f.Type}}{{end}}) (err error){
+    ownTx := tx == nil
+    if ownTx {
+        tx, err = t.db.Begin()
+        if err != nil{
+            err = errors.Wrap(err, "error creating tx")
+            return
+        }
+    }
     where := "{{range $i, $f := .PKFields}}{{if $i}} AND {{end}}{{$f.Column}}=${{inc $i}}{{end}}"
     sqlStatement := fmt.Sprintf(`DELETE 
         FROM %s
@@ -116,14 +184,35 @@ func (t *pg{{.Name}}Table)Delete({{range $i, $f := .PKFields}}{{if $i}},{{end}}{
         where,
     )
 
-    _, err = t.db.Exec(sqlStatement,
+    var stmt *sql.Stmt
+	stmt, err = tx.Prepare(sqlStatement)
+	if err != nil {
+		err = errors.Wrap(err, "error preparing statement")
+        if ownTx {
+		    tx.Rollback()
+        }
+		return
+	}
+	defer stmt.Close()
+
+    _, err = stmt.Exec(sqlStatement,
         {{range $i, $f := .PKFields}}{{$f.NameLower}},
         {{end}}
     )
 
     if err != nil {
-        //logging.LogErrore(err)
+        err = errors.Wrap(err, "error deleting")
+        if ownTx {
+            tx.Rollback()
+        }
         return
+    }
+    if ownTx {
+        err = tx.Commit()
+        if err != nil{
+            err = errors.Wrap(err, "error committing tx")
+            return
+        }
     }
 
     return
@@ -134,7 +223,7 @@ func (t *pg{{.Name}}Table)ReadRows(rows core.ScannableExt) (items []*{{.Package}
         var item {{.Package}}.{{.Name}}
         item, err = t.ReadRow(rows)
         if err != nil {
-            //logging.LogErrore(err)
+            err = errors.Wrap(err, "error reading row from db")
             return
         }
         items = append(items, &item)
