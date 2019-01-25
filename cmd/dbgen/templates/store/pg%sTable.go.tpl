@@ -9,6 +9,7 @@ import (
     {{.Package}} "{{.PackagePath}}"
     {{range $path, $name := .Imports}}
     {{$name}} "{{$path}}"{{end}}
+    "github.com/pkg/errors"
 )
 
 type pg{{.Name}}Table struct{
