@@ -53,7 +53,7 @@ func (t *pg{{.Name}}Table) Insert(tx *sql.Tx, el {{.Package}}.{{.Name}}) (err er
 	}
 	defer stmt.Close()
 
-    _, err = stmt.Exec(sqlStatement,
+    _, err = stmt.Exec(
         {{range $i, $f := .Fields}} el.{{$f.Name}},
         {{end}}
     )
@@ -101,7 +101,7 @@ func (t *pg{{.Name}}Table) Update(tx *sql.Tx, el {{.Package}}.{{.Name}}) (err er
 	}
 	defer stmt.Close()
 
-    _, err = stmt.Exec(sqlStatement,
+    _, err = stmt.Exec(
         {{range $i, $f := .Fields}} el.{{$f.Name}},
         {{end}}
     )
@@ -195,7 +195,7 @@ func (t *pg{{.Name}}Table)Delete(tx *sql.Tx, {{range $i, $f := .PKFields}}{{if $
 	}
 	defer stmt.Close()
 
-    _, err = stmt.Exec(sqlStatement,
+    _, err = stmt.Exec(
         {{range $i, $f := .PKFields}}{{$f.NameLower}},
         {{end}}
     )
