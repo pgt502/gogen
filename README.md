@@ -27,10 +27,18 @@ $ cd cmd/mockgen
 $ go build
 ```
 
-To generate a mock file for an interface, provide a (full) package name in `-pkg` parameter followed by the interface name. For example, to generate a mock for  `TestInterface` in `github.com/pgt502/gogen/testdata` package run:
+To generate a mock file for an interface, provide a (full) package name in `-pkg` parameter or file path in `-f` followed by the interface name. For example, to generate a mock for  `TestInterface` in `github.com/pgt502/gogen/testdata` package run:
 ```text
 $ ./mockgen -pkg=github.com/pgt502/gogen/testdata TestInterface
 ```
+
+or using the file path:
+```text
+$ ./mockgen -f=../testdata/order.go TestInterface
+```
+
+#### Note
+If your code is not in GOPATH, it is recommended to use the `-f` flag over the `-pkg` flag.
 
 #### Other options
 The following options can be overwritten by providing the respective flags:
@@ -90,10 +98,18 @@ $ cd cmd/dbgen
 $ go build
 ```
 
-To generate db code for a struct, provide a (full) package name in `-pkg` parameter followed by the struct name. For example, for the `Order` struct in `github.com/pgt502/gogen/testdata` package run:
+To generate db code for a struct, provide a (full) package name in `-pkg` parameter or file path in `-f` parameter followed by the struct name. For example, for the `Order` struct in `github.com/pgt502/gogen/testdata` package run:
 ```text
 $ ./dbgen -pkg=github.com/pgt502/gogen/testdata Order
 ```
+
+or using file path:
+```text
+$ ./dbgen -f=github.com/pgt502/gogen/testdata/order.go Order
+```
+
+#### Note
+If your code is not in GOPATH, it is recommended to use the `-f` flag over the `-pkg` flag.
 
 #### Other options
 The following options can be overwritten by providing the respective flags:
