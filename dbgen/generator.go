@@ -10,22 +10,34 @@ import (
 	"github.com/pgt502/gogen/generate"
 )
 
+// Generator is the main db generator type
 type Generator struct {
 	generate.Generator
 	name string
 	opts Options
 }
 
-func NewGenerator(stuctName, pkgName string, options ...Option) (*Generator, error) {
-	base, err := generate.NewGenerator(stuctName, pkgName)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+// NewGenerator creates a new generator
+func NewGenerator(stuctName string, options ...Option) (*Generator, error) {
 	opts := &Options{}
 	for _, op := range options {
 		op(opts)
 	}
+	var base generate.Generator
+	var err error
+	if opts.PackageName != nil && *opts.PackageName != "" {
+		base, err = generate.NewGenerator(stuctName, *opts.PackageName)
+	} else if opts.File != nil && *opts.File != "" {
+		base, err = generate.NewGeneratorFromFile(stuctName, *opts.File)
+	} else {
+		return nil, fmt.Errorf("either package name or file need to be provided")
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
 	g := &Generator{
 		Generator: base,
 		opts:      *opts,
