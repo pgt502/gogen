@@ -48,6 +48,9 @@ func GenerateFilesFromTemplates(ifaceName, tplPath, dstDir string, g BasicGenera
 		}
 		templates = append(templates, fi.Name())
 	}
+	if len(templates) == 0 {
+		log.Printf("no template files found in: %s\n", tplPath)
+	}
 
 	for _, el := range templates {
 		var fn string

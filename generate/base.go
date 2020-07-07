@@ -8,6 +8,7 @@ import (
 
 	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
+	impr "github.com/pgt502/gogen/import"
 )
 
 type BasicGenerator interface {
@@ -35,6 +36,19 @@ type generator struct {
 	name        string
 }
 
+// NewGeneratorFromFile creates a new instance of the generator using the file name
+func NewGeneratorFromFile(typeName, file string) (Generator, error) {
+	imp := impr.NewImporter()
+	pkg, err := imp.ImportFile(file)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
+	return newGenerator(typeName, pkg)
+}
+
+// NewGenerator creates a new instance of the generator using package name
 func NewGenerator(typeName, pkgName string) (Generator, error) {
 	imp := importer.DefaultWithTestFiles()
 	pkg, err := imp.Import(pkgName)
@@ -43,6 +57,11 @@ func NewGenerator(typeName, pkgName string) (Generator, error) {
 		return nil, err
 	}
 	log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
+	return newGenerator(typeName, pkg)
+}
+
+func newGenerator(typeName string, pkg *types.Package) (Generator, error) {
+	var err error
 	scope := pkg.Scope()
 	if scope == nil {
 		err = fmt.Errorf("package scope is nil")
@@ -58,6 +77,7 @@ func NewGenerator(typeName, pkgName string) (Generator, error) {
 		typeName: typeName,
 		pkg:      pkg,
 	}
+
 	if types.IsInterface(obj.Type()) {
 		g.iface = obj.Type().Underlying().(*types.Interface).Complete()
 		g.isInterface = true

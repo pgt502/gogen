@@ -25,7 +25,8 @@ func (i *arrayFlags) Set(value string) error {
 var myFlags arrayFlags
 
 var (
-	pkgName   = flag.String("pkg", ".", "package name of the interface to generate the mock from")
+	pkgName   = flag.String("pkg", "", "package name of the type to generate the code from")
+	file      = flag.String("f", "", "path to the file where the type to generate the code from is define")
 	output    = flag.String("o", ".", "output folder")
 	templates = flag.String("t", "./templates", "templates folder")
 	pluralise = flag.Bool("p", false, "pluralise the table name")
@@ -41,16 +42,17 @@ func main() {
 	//*pkgName = "../../testdata"
 	//ifaceName = "Order"
 
-	log.Printf("pkg is: %s, interface: %s\n", *pkgName, ifaceName)
-	if *pkgName == "" {
-		fmt.Println("pkg name needs to be specified")
+	log.Printf("pkg is: %s, file: %s, type: %s\n", *pkgName, *file, ifaceName)
+	if *pkgName == "" && *file == "" {
+		fmt.Println("pkg name or file needs to be specified")
 		return
 	}
 	if ifaceName == "" {
 		log.Println("struct needs to be provided as an argument")
 		return
 	}
-	g, err := dbgen.NewGenerator(ifaceName, *pkgName, dbgen.Pluralise(*pluralise))
+	g, err := dbgen.NewGenerator(ifaceName, dbgen.Package(pkgName),
+		dbgen.File(file), dbgen.Pluralise(*pluralise))
 	if err != nil {
 		log.Println(err)
 		return
