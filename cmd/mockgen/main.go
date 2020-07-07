@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"strings"
 
@@ -11,7 +10,8 @@ import (
 )
 
 var (
-	pkgName   = flag.String("pkg", ".", "package name of the interface to generate the mock from")
+	pkgName   = flag.String("pkg", "", "package name of the interface to generate the mock from")
+	file      = flag.String("f", "", "path to the file where the type to generate the code from is define")
 	output    = flag.String("o", ".", "output folder")
 	templates = flag.String("t", "./templates/repo", "templates folder")
 )
@@ -24,16 +24,16 @@ func main() {
 	//*pkgName = "../../auth"
 	//ifaceName = "AuthMiddleware"
 
-	fmt.Printf("pkg is: %s, interface: %s\n", *pkgName, ifaceName)
-	if *pkgName == "" {
-		log.Println("pkg name needs to be specified")
+	log.Printf("pkg is: %s, file: %s, interface: %s\n", *pkgName, *file, ifaceName)
+	if *pkgName == "" && *file == "" {
+		log.Println("pkg name or file needs to be specified")
 		return
 	}
 	if ifaceName == "" {
 		log.Println("interface needs to be provided as an argument")
 		return
 	}
-	g, err := mockgen.NewGenerator(ifaceName, *pkgName)
+	g, err := mockgen.NewGenerator(ifaceName, *pkgName, *file)
 	if err != nil {
 		log.Println(err)
 		return

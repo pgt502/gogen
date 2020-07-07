@@ -2,6 +2,7 @@ package mockgen
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
 
@@ -12,8 +13,16 @@ type Generator struct {
 	generate.Generator
 }
 
-func NewGenerator(ifaceName, pkgName string) (*Generator, error) {
-	base, err := generate.NewGenerator(ifaceName, pkgName)
+func NewGenerator(ifaceName, pkgName, file string) (*Generator, error) {
+	var base generate.Generator
+	var err error
+	if pkgName != "" {
+		base, err = generate.NewGenerator(ifaceName, pkgName)
+	} else if file != "" {
+		base, err = generate.NewGeneratorFromFile(ifaceName, file)
+	} else {
+		return nil, fmt.Errorf("either package name or file need to be provided")
+	}
 	if err != nil {
 		log.Println(err)
 		return nil, err
