@@ -11,6 +11,9 @@ go:
 matrix:
   allow_failures:
     - go: 'tip'
+  include:
+    - go: "1.11.x"
+      script: go test -v -mod=vendor ./...
 
 env:
   - GO111MODULE=on
