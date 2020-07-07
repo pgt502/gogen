@@ -5,15 +5,12 @@ sudo: false
 go:  
   - "1.9"
   - "1.10"
-  - "1.11"
+  - "1.12"
   - tip
 
 matrix:
   allow_failures:
     - go: 'tip'
-  include:
-    - go: "1.11.x"
-      script: go test -v -mod=vendor ./...
 
 env:
   - GO111MODULE=on
