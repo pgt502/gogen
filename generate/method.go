@@ -62,7 +62,7 @@ func (m Method) ReturnTypes() []*Param {
 		}
 
 	}
-	fmt.Printf("return types: %+v\n", types)
+	//fmt.Printf("return types: %+v\n", types)
 	return types
 }
 
@@ -89,7 +89,7 @@ func (m Method) listTypeNames(t *types.Tuple) []*Param {
 		p := t.At(i).Type().String()
 		name := t.At(i).Name()
 
-		fmt.Printf("type is: %s, name: %s\n", p, name)
+		//fmt.Printf("type is: %s, name: %s\n", p, name)
 
 		if strings.Contains(p, "/") {
 			if strings.HasPrefix(p, "[]*") {
