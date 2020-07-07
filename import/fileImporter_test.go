@@ -1,9 +1,6 @@
 package generate_test
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/ernesto-jimenez/gogen/importer"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,22 +15,11 @@ var _ = Describe("FileImporter", func() {
 			pkg, err := imp.ImportFile("../testdata/order.go")
 			Expect(err).To(BeNil(), "error importing file")
 			Expect(pkg).NotTo(BeNil(), "package nil")
+			Expect(pkg.Name()).To(Equal("testdata"), "package name")
 
-			log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
 			obj := pkg.Scope().Lookup("Order")
-			fmt.Printf("object: %+v\n", obj)
-			fmt.Print(pkg.Imports())
-		})
-		FIt("should import a file outside the project", func() {
-			imp := NewImporter()
-			pkg, err := imp.ImportFile("/Users/pawel/dev/go/hello/pkg/types/person.go")
-			Expect(err).To(BeNil(), "error importing file")
-			Expect(pkg).NotTo(BeNil(), "package nil")
-
-			log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
-			obj := pkg.Scope().Lookup("Person")
-			fmt.Printf("object: %+v\n", obj)
-			fmt.Print(pkg.Imports())
+			Expect(obj).NotTo(BeNil(), "object nil")
+			Expect(obj.Name()).To(Equal("Order"), "object name")
 		})
 		It("using importer", func() {
 			imp := importer.DefaultWithTestFiles()
@@ -41,9 +27,11 @@ var _ = Describe("FileImporter", func() {
 			pkg, err := imp.Import(pkgName)
 			Expect(err).To(BeNil(), "error importing file")
 			Expect(pkg).NotTo(BeNil(), "package nil")
-			log.Printf("package name is: %s, path: [%s]\n", pkg.Name(), pkg.Path())
+			Expect(pkg.Name()).To(Equal("testdata"), "package name")
+
 			obj := pkg.Scope().Lookup("Order")
-			fmt.Printf("object: %+v\n", obj)
+			Expect(obj).NotTo(BeNil(), "object nil")
+			Expect(obj.Name()).To(Equal("Order"), "object name")
 		})
 	})
 })
