@@ -3,12 +3,14 @@ module github.com/pgt502/gogen
 go 1.12
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ernesto-jimenez/gogen v0.0.0-20180125220232-d7d4131e6607
 	github.com/fatih/structtag v1.0.0
-	github.com/golang/protobuf v1.2.0
-	golang.org/x/net v0.0.0-20180921000356-2f5d2388922f
-	golang.org/x/sys v0.0.0-20180921163948-d47a0f339242
-	golang.org/x/text v0.3.0
-	google.golang.org/genproto v0.0.0-20180918203901-c3f76f3b92d1
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/onsi/ginkgo v1.14.0
+	github.com/onsi/gomega v1.10.1
+	github.com/stretchr/testify v1.4.0 // indirect
+	google.golang.org/genproto v0.0.0-20180918203901-c3f76f3b92d1 // indirect
 	google.golang.org/grpc v1.15.0
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
